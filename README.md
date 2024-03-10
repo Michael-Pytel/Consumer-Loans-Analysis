@@ -18,8 +18,9 @@ The dataset contains information about loan applicants, including their income ,
 
 * Conduct exploratory data analysis (EDA) to understand distributions of loan amounts, interest rates, borrower characteristics, and loan outcomes.
 * Visualize the data using histograms, boxplots, scatter plots, and heatmaps.
-* Identify potential relationships between features and loan defaults.
 * Perform data cleaning and pre-processing (handling missing values, outliers, etc.).
+  
+**Feature Engineering** (work in progress)
 
 **Model Development** (still in progress)
 
