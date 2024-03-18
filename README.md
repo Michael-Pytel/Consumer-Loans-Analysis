@@ -11,14 +11,14 @@ The dataset contains information about loan applicants, including their income ,
 **Project Goals**
 
 * Understand consumer loan characteristics and trends.
-* Identify factors influencing loan defaults.
+* Identify factors influencing loan finalization.
 * Develop models to predict loan risk (probability of default).
 
 **Data Analysis and Exploration**
 
-* Conduct exploratory data analysis (EDA) to understand distributions of loan amounts, interest rates, borrower characteristics, and loan outcomes.
-* Visualize the data using histograms, boxplots, scatter plots, and heatmaps.
-* Perform data cleaning and pre-processing (handling missing values, outliers, etc.).
+* Conduct exploratory data analysis (EDA) to understand distributions of loan amounts and borrower characteristics.
+* Visualizing the data using histograms, boxplots, scatter plots, and correlation plots.
+* Performing data cleaning and pre-processing (handling missing values, outliers, etc.).
   
 **Feature Engineering** (work in progress)
 
