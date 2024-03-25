@@ -20,7 +20,8 @@ The dataset contains information about loan applicants, including their income ,
 * Visualizing the data using histograms, boxplots, scatter plots, and correlation plots.
 * Performing data cleaning and pre-processing (handling missing values, outliers, etc.).
   
-**Feature Engineering** (work in progress)
+**Feature Engineering** 
+* Creating new features
 
 **Model Development** (still in progress)
 
