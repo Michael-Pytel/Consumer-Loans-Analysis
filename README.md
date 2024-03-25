@@ -28,8 +28,9 @@ The dataset contains information about loan applicants, including their income ,
 ```
 Consumer-Loans-Analysis/
   ├── data/               # Raw and processed data
-  ├── notebooks/          # Jupyter Notebooks or Python scripts 
-  ├── models/             # Trained machine learning models 
+  ├── notebooks/          # Jupyter Notebooks 
+  ├── models/             # Trained machine learning models
+  ├── pipelines/          # pipelines for processing data 
   ├── reqirements.txt     # needed tool versions
   └── README.md           # This file
 ```
