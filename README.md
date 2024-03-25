@@ -12,7 +12,7 @@ The dataset contains information about loan applicants, including their income ,
 
 * Understand consumer loan characteristics and trends.
 * Identify factors influencing loan finalization.
-* Develop models to predict loan risk (probability of default).
+* Develop models to predict loan approval.
 
 **Data Analysis and Exploration**
 
