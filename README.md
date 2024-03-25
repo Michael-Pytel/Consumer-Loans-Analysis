@@ -11,16 +11,17 @@ The dataset contains information about loan applicants, including their income ,
 **Project Goals**
 
 * Understand consumer loan characteristics and trends.
-* Identify factors influencing loan defaults.
-* Develop models to predict loan risk (probability of default).
+* Identify factors influencing loan finalization.
+* Develop models to predict loan approval.
 
 **Data Analysis and Exploration**
 
-* Conduct exploratory data analysis (EDA) to understand distributions of loan amounts, interest rates, borrower characteristics, and loan outcomes.
-* Visualize the data using histograms, boxplots, scatter plots, and heatmaps.
-* Perform data cleaning and pre-processing (handling missing values, outliers, etc.).
+* Conduct exploratory data analysis (EDA) to understand distributions of loan amounts and borrower characteristics.
+* Visualizing the data using histograms, boxplots, scatter plots, and correlation plots.
+* Performing data cleaning and pre-processing (handling missing values, outliers, etc.).
   
-**Feature Engineering** (work in progress)
+**Feature Engineering** 
+* Creating new features
 
 **Model Development** (still in progress)
 
@@ -28,8 +29,9 @@ The dataset contains information about loan applicants, including their income ,
 ```
 Consumer-Loans-Analysis/
   ├── data/               # Raw and processed data
-  ├── notebooks/          # Jupyter Notebooks or Python scripts 
-  ├── models/             # Trained machine learning models 
+  ├── notebooks/          # Jupyter Notebooks 
+  ├── models/             # Trained machine learning models
+  ├── pipelines/          # pipelines for processing data 
   ├── reqirements.txt     # needed tool versions
   └── README.md           # This file
 ```
