@@ -17,30 +17,30 @@ def create_has_dependents(X):
 
 
 # well keep relation between each education levels
-class EducationEncoder(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        self.education_map = [
-            "Primary school",
-            "Middle school",
-            "Highschool",
-            "Other",
-            "Post secondary school",
-            "Vocational school",
-            "College",
-            "University",
-            "Post-graduate",
-        ]
+# class EducationEncoder(BaseEstimator, TransformerMixin):
+#     def __init__(self):
+#         self.education_map = [
+#             "Primary school",
+#             "Middle school",
+#             "Highschool",
+#             "Other",
+#             "Post secondary school",
+#             "Vocational school",
+#             "College",
+#             "University",
+#             "Post-graduate",
+#         ]
 
-    def fit(self, X, y=None):
-        return self
+#     def fit(self, X, y=None):
+#         return self
 
-    def set_output(self, *args, **kwargs):
-        return self
+#     def set_output(self, *args, **kwargs):
+#         return self
 
-    def transform(self, X):
-        return X.map(
-            lambda x: self.education_map.index(x) / len(self.education_map)
-        ).astype(np.float64)
+#     def transform(self, X):
+#         return X.map(
+#             lambda x: self.education_map.index(x) / len(self.education_map)
+#         ).astype(np.float64)
 
 
 # using iqr

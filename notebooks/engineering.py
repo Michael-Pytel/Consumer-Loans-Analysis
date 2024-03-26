@@ -1,4 +1,44 @@
 from sklearn.base import BaseEstimator, TransformerMixin
+import numpy as np
+import pandas as pd
+from scipy.optimize import minimize
+
+class CreditScorePipeline(BaseEstimator, TransformerMixin):
+    def __init__(self, features):
+        self.features = features
+        self.weights = None
+
+    def fit(self, df, target_column):
+        def get_total_score(weights):
+            X = df[self.features].values
+            return np.dot(X, weights)
+
+        def get_total_score_corr(weights):
+            total_score = get_total_score(weights)
+            correlation = np.corrcoef(total_score, df[target_column])[0, 1]
+            return correlation
+
+        def get_total_score_corr_metric(weights):
+            return -np.abs(get_total_score_corr(weights))
+
+        initial_weights = np.ones(len(self.features))
+        result = minimize(get_total_score_corr_metric, initial_weights, method='Nelder-Mead')
+        self.weights = result.x
+
+    def transform(self, df):
+        def get_total_score(weights):
+            X = df[self.features].values
+            return np.dot(X, weights)
+
+        df["Total_Score"] = get_total_score(self.weights)
+        min_score = df['Total_Score'].min()
+        max_score = df['Total_Score'].max()
+        df['CREDIT_SCORE'] = (df['Total_Score'] - min_score) / (max_score - min_score)
+        df.drop(columns=['Total_Score'], inplace=True)
+        return df
+    
+    def set_output(self, *args, **kwargs):
+        return self
 
 
 class CreateHasCurrentAccountColumn(BaseEstimator, TransformerMixin):
@@ -40,7 +80,6 @@ class CalculateCreditScore(BaseEstimator, TransformerMixin):
             "BUSINESS_AGE": 0.1,
             "LENGTH_RELATIONSHIP_WITH_CLIENT": 0.4,
             "AGE": 0.4,
-            "EDUCATION": 0.4,
             "HAS_DEPENDENTS": 0.2,
             "MARITAL_STATUS_married": 0.3,
             "MARITAL_STATUS_single": -0.2,
@@ -59,7 +98,7 @@ class CalculateCreditScore(BaseEstimator, TransformerMixin):
             + X["LENGTH_RELATIONSHIP_WITH_CLIENT"]
             * self.feature_weights["LENGTH_RELATIONSHIP_WITH_CLIENT"]
             + X["AGE"] * self.feature_weights["AGE"]
-            + X["EDUCATION"] * self.feature_weights["EDUCATION"]
+
             + X["MARITAL_STATUS_married"]
             * self.feature_weights["MARITAL_STATUS_married"]
             + X["MARITAL_STATUS_single"] * self.feature_weights["MARITAL_STATUS_single"]
@@ -79,7 +118,50 @@ class CalculateCreditScore(BaseEstimator, TransformerMixin):
 
     def set_output(self, *args, **kwargs):
         return self
+# class CalculateCreditScore(BaseEstimator, TransformerMixin):
+#     def __init__(self):
+#         self.features = ['INCOME', 'WORK_SENIORITY', 'BUSINESS_AGE', 'LENGTH_RELATIONSHIP_WITH_CLIENT', 'AGE',
+#                          'RESIDENTIAL_PLACE_Living with family', 'MARITAL_STATUS_married',
+#                          'MARITAL_STATUS_single', 'RESIDENTIAL_PLACE_Owner without mortgage', 'PRODUCT_C',
+#                          'SALARY_ACCOUNT']
+#         self.target_column = 'FINALIZED_LOAN'
+#         self.weights = None
 
+#     def fit(self, df):
+#         def get_total_score(weights):
+#             X = df[self.features].values
+#             return np.dot(X, weights)
+
+#         def get_total_score_corr(weights):
+#             total_score = get_total_score(weights)
+#             correlation = np.corrcoef(total_score, df[self.target_column])[0, 1]
+#             return correlation
+
+#         def get_total_score_corr_metric(weights):
+#             return -np.abs(get_total_score_corr(weights))
+
+#         initial_weights = np.ones(len(self.features))
+#         result = minimize(get_total_score_corr_metric, initial_weights, method='Nelder-Mead')
+#         self.weights = result.x
+#         return self
+
+#     def transform(self, df):
+#         def get_total_score(weights):
+#             X = df[self.features].values
+#             return np.dot(X, weights)
+
+#         df["Total_Score"] = get_total_score(self.weights)
+#         min_score = df['Total_Score'].min()
+#         max_score = df['Total_Score'].max()
+#         df['CREDIT_SCORE'] = (df['Total_Score'] - min_score) / (max_score - min_score)
+#         df.drop(columns=['Total_Score'], inplace=True)
+#         return df
+
+#     def fit_transform(self, df):
+#         return self.fit(df).transform(df)
+
+#     def set_output(self, *args, **kwargs):
+#         return self
 
 class CreateAdditionalFeatures(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
