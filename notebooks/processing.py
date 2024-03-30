@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.metrics import f1_score
 
 
 # as previously we'll map it to boolean variable
@@ -19,6 +18,7 @@ def create_has_dependents(X):
 # well keep relation between each education levels
 class EducationEncoder(BaseEstimator, TransformerMixin):
     def __init__(self):
+        super().__init__()
         self.education_map = [
             "Primary school",
             "Middle school",
@@ -66,96 +66,9 @@ class RemoveOutliers(BaseEstimator, TransformerMixin):
         return self
 
 
-# chence here there are many missing values we'll try to predict
-# them based on all numerical data we'll have so far
-class EconomicSectorEncoderImputer(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        self.estimator = RandomForestClassifier(
-            max_depth=5,
-            random_state=42,
-            n_jobs=-1,
-            min_samples_split=10,
-            n_estimators=300,
-        )
-        self.encoder = make_pipeline(OneHotEncoder(sparse_output=False)).set_output(
-            transform="pandas"
-        )
-
-    def fit(self, X, y=None):
-        train_idx = np.where(X["ECONOMIC_SECTOR"] != "Missing")[0]
-        X_train = X.select_dtypes(include="number").loc[train_idx, :]
-        y_train = X.loc[train_idx, "ECONOMIC_SECTOR"]
-        self.estimator.fit(X_train, y_train)
-        self.encoder.fit(y_train.to_frame())
-
-        return self
-
-    def transform(self, X):
-        X = X.copy()
-
-        pred_idx = np.where(X["ECONOMIC_SECTOR"] == "Missing")[0]
-        X_pred = X.select_dtypes(include="number").loc[pred_idx, :]
-        X.loc[pred_idx, "ECONOMIC_SECTOR"] = self.estimator.predict(X_pred)
-
-        encoded = self.encoder.transform(X["ECONOMIC_SECTOR"].to_frame())
-        X.drop("ECONOMIC_SECTOR", axis=1, inplace=True)
-
-        return pd.concat([X, encoded], axis=1)
-
-    def set_output(self, *args, **kwargs):
-        return self
-
-
-# we'll assume that relation between employee numbers is relevant
-# and map it as half of possible numbers where 2000 indicates the highest one
-class EmployeeNoEncoderImputer(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        self.employee_no_map = {
-            "> 1.000": 2000,
-            "between 0-10": 5,
-            "between 101-250": 175,
-            "between 11-20": 15,
-            "between 21-50": 35,
-            "between 251-500": 375,
-            "between 501-1.000": 750,
-            "between 51-100": 75,
-        }
-
-        self.estimator = RandomForestClassifier(
-            max_depth=5,
-            random_state=42,
-            n_jobs=-1,
-            min_samples_split=10,
-            n_estimators=300,
-        )
-
-    def fit(self, X, y=None):
-        train_idx = np.where(X["EMPLOYEE_NO"] != "Missing")[0]
-        X_train = X.select_dtypes(include="number").loc[train_idx, :]
-        y_train = X.loc[train_idx, "EMPLOYEE_NO"]
-        self.estimator.fit(X_train, y_train)
-
-        return self
-
-    def transform(self, X):
-        X = X.copy()
-
-        pred_idx = np.where(X["EMPLOYEE_NO"] == "Missing")[0]
-        X_pred = X.select_dtypes(include="number").loc[pred_idx, :]
-        X.loc[pred_idx, "EMPLOYEE_NO"] = self.estimator.predict(X_pred)
-
-        X["EMPLOYEE_NO"] = X["EMPLOYEE_NO"].map(
-            lambda x: (self.employee_no_map[x] - 5) / (2000 - 5)
-        )
-
-        return X
-
-    def set_output(self, *args, **kwargs):
-        return self
-
-
 class RenameColumn(BaseEstimator, TransformerMixin):
     def __init__(self, old_column_name, new_column_name):
+        super().__init__()
         self.old_column_name = old_column_name
         self.new_column_name = new_column_name
 
@@ -173,20 +86,182 @@ class RenameColumn(BaseEstimator, TransformerMixin):
 # utility function to keep all column names proper and easily process all data
 class ProcessingTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, transformers):
+        super().__init__()
         self.transformers = transformers
 
     def fit(self, X, y=None):
         for transformer in self.transformers:
             X = transformer.fit_transform(X)
-            self.reset_columns(X)
+            ProcessingTransformer.reset_columns(X)
         return self
 
     def transform(self, X):
         for transformer in self.transformers:
             X = transformer.transform(X)
-            self.reset_columns(X)
+            ProcessingTransformer.reset_columns(X)
         return X
+
+    def set_output(self, *args, **kwargs):
+        return self
 
     @staticmethod
     def reset_columns(X):
         X.columns = [col.split("__")[-1] for col in X.columns]
+
+
+class EmployeePartialTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        super().__init__()
+        self.employee_no_map = {
+            "between 0-10": 0,
+            "between 11-20": 1,
+            "between 21-50": 2,
+            "between 51-100": 3,
+            "between 101-250": 4,
+            "between 251-500": 5,
+            "between 501-1.000": 6,
+            "> 1.000": 7,
+            "Missing": None,
+        }
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X["EMPLOYEE_NO_NUM"] = X["EMPLOYEE_NO"].map(self.employee_no_map)
+        X.drop(columns=["EMPLOYEE_NO"], inplace=True)
+        return X
+
+    def set_output(self, *args, **kwargs):
+        return self
+
+
+class MyImputer(BaseEstimator, TransformerMixin):
+    def __init__(
+        self, estimator, target, encoder=None, missing_val="Missing", train=False
+    ):
+        super().__init__()
+        self.estimator = estimator
+        self.target = target
+        self.encoder = encoder
+        self.missing_val = missing_val
+        self.train = train
+        self.target_cols = []
+
+    def fit(self, X, y=None):
+        idx = np.where(X[self.target] != self.missing_val)[0]
+
+        if self.encoder is not None:
+            X = self.encoder.fit_transform(X.loc[idx, :])
+            ProcessingTransformer.reset_columns(X)
+        self.target_cols = MyImputer.get_target_cols(X, self.target)
+
+        if self.train:
+            X_train = X.loc[:, ~X.columns.isin(self.target_cols)]
+            y_train = X.loc[:, self.target_cols]
+            self.estimator.fit(X_train, y_train)
+
+        return self
+
+    def transform(self, X):
+        idx = np.where(X[self.target] == self.missing_val)[0]
+
+        if self.encoder is not None:
+            X = self.encoder.transform(X)
+            ProcessingTransformer.reset_columns(X)
+
+        if idx.any():
+            X_pred = X.iloc[idx, ~X.columns.isin(self.target_cols)]
+            X.iloc[idx, [list(X.columns).index(col) for col in self.target_cols]] = (
+                self.estimator.predict(X_pred)
+            )
+        return X
+
+    def set_output(self, *args, **kwargs):
+        return self
+
+    @staticmethod
+    def get_target_cols(X, target):
+        return [col for col in X.columns if col.startswith(target) and col != target]
+
+
+def evaluate_estimator(
+    df,
+    df_valid,
+    target,
+    estimator,
+    encoder=None,
+    missing_val="Missing",
+    drop_columns=[],
+):
+    imputer = ColumnTransformer(
+        [
+            (
+                "imputer",
+                MyImputer(
+                    estimator=estimator,
+                    encoder=encoder,
+                    target=target,
+                    missing_val=missing_val,
+                    train=True,
+                ),
+                [col for col in df.columns if col not in drop_columns],
+            )
+        ],
+        remainder="passthrough",
+    ).set_output(transform="pandas")
+    df = df.copy()
+    df_valid = df_valid.copy()
+
+    df = imputer.fit_transform(df)
+    ProcessingTransformer.reset_columns(df)
+    target_cols = MyImputer.get_target_cols(df, target)
+
+    score = None
+    idx = np.where(df_valid[target] != missing_val)[0]
+    if len(idx) > 0:
+        df_valid_test = imputer.transform(df_valid.loc[idx, :])
+        ProcessingTransformer.reset_columns(df_valid_test)
+        y_test = df_valid_test.loc[idx, target_cols]
+
+        df_valid.loc[idx, target] = missing_val
+        df_valid_pred = imputer.transform(df_valid.loc[idx, :])
+        ProcessingTransformer.reset_columns(df_valid_pred)
+        y_pred = df_valid_pred.loc[idx, target_cols]
+
+        score = f1_score(y_test, y_pred, average="micro")
+    return score, imputer
+
+
+def create_best_estimator(
+    study,
+    df,
+    df_valid,
+    target,
+    estimator_class,
+    encoder=None,
+    missing_val="Missing",
+    drop_columns=[],
+):
+    trial = study.best_trial
+
+    print("Number of finished trials: {}".format(len(study.trials)))
+    print("Best trial:")
+    print("  Value: {}".format(trial.value))
+    print("  Params: ")
+    for key, value in trial.params.items():
+        print("    {}: {}".format(key, value))
+
+    estimator = estimator_class(**trial.params)
+    score, pipeline = evaluate_estimator(
+        estimator=estimator,
+        encoder=encoder,
+        df=df,
+        df_valid=df_valid,
+        target=target,
+        drop_columns=drop_columns,
+        missing_val=missing_val,
+    )
+
+    print(f"Refitted best model f1-score: {score}")
+    return pipeline
