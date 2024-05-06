@@ -1,0 +1,9 @@
+feature_engineering.ipynb
+1. Jako cechy o dużym znaczeniu dla modelu zostały wybrane LENGTH_RELATIONSHIP_WITH_CLIENT i AGE, jednak były też obecne inne cechy o większym znaczeniu niż AGE.
+Nie zostało wyjaśnione dlaczego tylko te dwie cechy są wyróżnione.
+2. Brak standaryzacji zmiennych lub chociaż komentarz że robienie tego jest w tym przypadku niepotrzebne. Tylko niektóre zmienne zostały znormalizowane
+
+modeling_validation.ipynb 
+3. W komórce 4 brakuje importu StratifiedKFold
+4. W komórce 8 jest omyłkowo wpisany x przy nawiasie.
+5. W komórce 10. i 11. jest używana biblioteka xgboost, choć nie ma o niej informacj w pliku requirements.txt.
