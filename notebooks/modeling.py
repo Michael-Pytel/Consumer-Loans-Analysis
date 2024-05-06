@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import optuna
 import seaborn as sns
-from engineering import EngineeringTransformer
+import tensorflow as tf
 from sklearn.dummy import DummyClassifier
-from sklearn.metrics import f1_score
-from sklearn.model_selection import cross_validate
+from sklearn.metrics import f1_score, make_scorer
+from sklearn.model_selection import cross_val_score, cross_validate
 
 
 def my_cross_validate(models, X_train, y_train, scoring, cv=6, n_jobs=-1):
@@ -204,5 +205,105 @@ def create_best_estimator(
     y_pred = estimator.predict(X_valid)
     score = f1_score(y_valid, y_pred, average="micro")
 
-    print(f"Refitted best model f1-score: {score}")
+    print(f"Refitted best model f1-score on valid: {score}")
     return estimator
+
+
+def optimize(X_train, y_train, model_class, create_objective_func, n_trials=100):
+    study = optuna.create_study(direction="maximize")
+    study.optimize(
+        create_objective_func(X_train, y_train, model_class), n_trials=n_trials
+    )
+    return study
+
+
+def after_params_objective(params, X_train, y_train, model_class, n_jobs=-1):
+    micro_f1_scorer = make_scorer(f1_score, average="micro")
+    cv_scores = cross_val_score(
+        model_class(**params),
+        X_train,
+        y_train,
+        cv=5,
+        scoring=micro_f1_scorer,
+        n_jobs=n_jobs,
+    )
+    return cv_scores.mean()
+
+
+def train_model(model, X_train, y_train, X_val, y_val, batch_size=32, epochs=100):
+    early_stopping_callback = tf.keras.callbacks.EarlyStopping(
+        monitor="val_loss", patience=5, restore_best_weights=True
+    )
+    lr_callback = tf.keras.callbacks.ReduceLROnPlateau(
+        monitor="val_loss", factor=0.5, patience=3
+    )
+
+    model.compile(
+        optimizer="adam",
+        loss="binary_crossentropy",
+        metrics=[tf.keras.metrics.F1Score(average="micro")],
+    )
+
+    return model.fit(
+        x=X_train.values,
+        y=y_train.values.reshape(-1, 1),
+        validation_data=(X_val.values, y_val.values.reshape(-1, 1)),
+        batch_size=batch_size,
+        epochs=epochs,
+        shuffle=True,
+        verbose=1,
+        callbacks=[early_stopping_callback, lr_callback],
+    )
+
+
+def plot_history(history):
+    sns.set(style="whitegrid")
+
+    train_loss = history.history["loss"]
+    val_loss = history.history["val_loss"]
+
+    train_f1_score = history.history["f1_score"]
+    val_f1_score = history.history["val_f1_score"]
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 6))
+
+    sns.lineplot(
+        x=range(1, len(train_loss) + 1),
+        y=train_loss,
+        label="Training Loss",
+        color="red",
+        ax=ax1,
+    )
+    sns.lineplot(
+        x=range(1, len(val_loss) + 1),
+        y=val_loss,
+        label="Validation Loss",
+        color="green",
+        ax=ax1,
+    )
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Loss")
+    ax1.set_title("Training and Validation Loss")
+    ax1.legend(loc="upper right")
+
+    sns.lineplot(
+        x=range(1, len(train_f1_score) + 1),
+        y=train_f1_score,
+        label="Training F1 Score",
+        color="red",
+        ax=ax2,
+    )
+    sns.lineplot(
+        x=range(1, len(val_f1_score) + 1),
+        y=val_f1_score,
+        label="Validation F1 Score",
+        color="green",
+        ax=ax2,
+    )
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("F1 Score")
+    ax2.set_title("Training and Validation F1 Score")
+    ax2.legend(loc="upper right")
+
+    plt.tight_layout()
+    plt.show()
