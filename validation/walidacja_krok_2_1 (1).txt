@@ -1,4 +1,4 @@
-feature_engineering.ipynb
+  feature_engineering.ipynb
 1. Jako cechy o dużym znaczeniu dla modelu zostały wybrane LENGTH_RELATIONSHIP_WITH_CLIENT i AGE, jednak były też obecne inne cechy o większym znaczeniu niż AGE.
 Nie zostało wyjaśnione dlaczego tylko te dwie cechy są wyróżnione.
 2. Brak standaryzacji zmiennych lub chociaż komentarz że robienie tego jest w tym przypadku niepotrzebne. Tylko niektóre zmienne zostały znormalizowane
