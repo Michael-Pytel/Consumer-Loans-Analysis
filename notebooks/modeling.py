@@ -3,6 +3,7 @@ import numpy as np
 import optuna
 import seaborn as sns
 import tensorflow as tf
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import classification_report, f1_score, make_scorer, roc_auc_score
 from sklearn.model_selection import cross_val_score, cross_validate
@@ -316,3 +317,20 @@ def my_classification_report(model, X, y):
     y_pred = np.where(y_pred > 0.5, 1, 0)
     print(classification_report(y, y_pred))
     print(f"ROC AUC score: {roc_auc_score(y, y_pred)}")
+
+
+class FinalModel(BaseEstimator, TransformerMixin):
+    def __init__(self, pipeline, classifier):
+        self.pipeline = pipeline
+        self.model = classifier
+
+    def predict(self, X):
+        if "FINALIZED_LOAN" not in X.columns:
+            X["FINALIZED_LOAN"] = np.ones(X.shape[0])
+
+        X = self.pipeline.transform(X)
+        X.drop(columns=["FINALIZED_LOAN"], inplace=True)
+        return self.model.predict(X.values)
+
+    def set_output(self, *args, **kwargs):
+        return self
