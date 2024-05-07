@@ -4,7 +4,7 @@ import optuna
 import seaborn as sns
 import tensorflow as tf
 from sklearn.dummy import DummyClassifier
-from sklearn.metrics import f1_score, make_scorer
+from sklearn.metrics import classification_report, f1_score, make_scorer, roc_auc_score
 from sklearn.model_selection import cross_val_score, cross_validate
 
 
@@ -241,7 +241,7 @@ def train_model(model, X_train, y_train, X_val, y_val, batch_size=32, epochs=100
     model.compile(
         optimizer="adam",
         loss="binary_crossentropy",
-        metrics=[tf.keras.metrics.F1Score(average="micro")],
+        metrics=["AUC"],
     )
 
     return model.fit(
@@ -262,8 +262,8 @@ def plot_history(history):
     train_loss = history.history["loss"]
     val_loss = history.history["val_loss"]
 
-    train_f1_score = history.history["f1_score"]
-    val_f1_score = history.history["val_f1_score"]
+    train_auc = history.history["AUC"]
+    val_auc = history.history["val_AUC"]
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 6))
 
@@ -287,23 +287,30 @@ def plot_history(history):
     ax1.legend(loc="upper right")
 
     sns.lineplot(
-        x=range(1, len(train_f1_score) + 1),
-        y=train_f1_score,
-        label="Training F1 Score",
+        x=range(1, len(train_auc) + 1),
+        y=train_auc,
+        label="Training",
         color="red",
         ax=ax2,
     )
     sns.lineplot(
-        x=range(1, len(val_f1_score) + 1),
-        y=val_f1_score,
-        label="Validation F1 Score",
+        x=range(1, len(val_auc) + 1),
+        y=val_auc,
+        label="Validation",
         color="green",
         ax=ax2,
     )
     ax2.set_xlabel("Epoch")
-    ax2.set_ylabel("F1 Score")
-    ax2.set_title("Training and Validation F1 Score")
+    ax2.set_ylabel("AUC")
+    ax2.set_title("Training and Validation AUC")
     ax2.legend(loc="upper right")
 
     plt.tight_layout()
     plt.show()
+
+
+def my_classification_report(model, X, y):
+    y_pred = model.predict(X)
+    y_pred = np.where(y_pred > 0.5, 1, 0)
+    print(classification_report(y, y_pred))
+    print(f"ROC AUC score: {roc_auc_score(y, y_pred)}")
