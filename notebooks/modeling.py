@@ -210,7 +210,9 @@ def create_best_estimator(
 
 
 def optimize(X_train, y_train, model_class, create_objective_func, n_trials=100):
-    study = optuna.create_study(direction="maximize")
+    study = optuna.create_study(
+        direction="maximize", pruner=optuna.pruners.MedianPruner()
+    )
     study.optimize(
         create_objective_func(X_train, y_train, model_class), n_trials=n_trials
     )
