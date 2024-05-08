@@ -2,6 +2,8 @@
 
 This project explores and analyzes the Consumer Loans dataset from Kaggle.
 
+Final data product is described [here](./final_presentation.pdf).
+
 **Data Source:** [Consumer loans dataset | Kaggle](https://www.kaggle.com/datasets/zafish/consumer-loans)
 
 **Data Description**
